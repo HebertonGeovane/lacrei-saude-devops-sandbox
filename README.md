@@ -1,4 +1,4 @@
-# 🏥 Lacrei Saúde - Desafio DevOps (Full Stack Infrastructure)
+# 🏥 Lacrei Saúde - Desafio Técnico DevOps 
 
 ![AWS](https://img.shields.io/badge/AWS-Cloud-orange?logo=amazon-aws)
 ![Terraform](https://img.shields.io/badge/Terraform-IaC-623CE4?logo=terraform)
@@ -14,7 +14,7 @@
 
 ---
 
-Este projeto implementa a infraestrutura moderna e o pipeline de entrega contínua para a API da Lacrei Saúde. A solução utiliza práticas de **IaC (Infrastructure as Code)**, **Cloud Native** e **Observabilidade** para garantir um ambiente seguro, escalável e monitorado.
+Este Desafio Técnico DevOps implementa uma infraestrutura moderna e o pipeline de entrega contínua para a API da Lacrei Saúde. A solução utiliza práticas de **IaC (Infrastructure as Code)**, **Cloud Native** e **Observabilidade** para garantir um ambiente seguro, escalável e monitorado.
 
 ---
 
@@ -141,14 +141,23 @@ Exemplo:
 
 # 📝 Registro de Decisões
 
-- Problema com `$` na API Key do Asaas  
-  → Sanitização via GitHub Secrets  
+Durante o desenvolvimento deste teste técnico, enfrentei e resolvi desafios reais de engenharia de nuvem, documentados abaixo para fins de governança e histórico:
 
-- Escolha do Fargate  
-  → Menor overhead operacional  
 
-- Erro SNS  
-  → Adicionada permissão `sns:Publish`  
+### 1. Unificação do Load Balancer (Custo e DNS)
+* **Problema:** A criação de múltiplos ALBs gerava custos desnecessários e exigia que o administrador de rede alterasse registros DNS (CNAME) a cada novo ambiente.
+* **Solução:** Refatoração do Terraform para utilizar um **Application Load Balancer compartilhado** (`lacrei-alb-main`). Implementado o uso de múltiplos **Target Groups** vinculados ao mesmo Listener, garantindo economia e estabilidade no link oficial.
+
+### 2. Sanitização de Secrets (Interpolação de Bash)
+* **Problema:** A chave da API do Asaas continha o caractere especial `$`, que era interpretado erroneamente pelo Linux/Terraform como uma variável de sistema vazia.
+* **Solução:** Implementação de **escape sequence** (`\$`) e tratamento rigoroso via GitHub Secrets, garantindo que a credencial fosse entregue à aplicação de forma íntegra.
+
+### 3. Gerenciamento de Estado do ECR (Lifecycle)
+* **Problema:** O Terraform apresentava o erro `RepositoryNotEmptyException` ao tentar destruir ou renomear recursos, impedindo deploys automatizados devido à persistência de imagens Docker antigas.
+* **Solução:** Adição da flag `force_delete = true` no recurso do **Amazon ECR**. Isso permite que o pipeline limpe o ambiente e recrie repositórios de forma fluida sem intervenção manual.
+
+### 4. Observabilidade Ativa e Resiliência
+* **Solução:** Implementação de alarmes de **CloudWatch** integrados ao **Amazon SNS**. Configuração e monitoramento da métrica `UnhealthyHostCount` para garantir que o time de engenharia receba notificações imediatas via e-mail caso os containers de produção apresentem falhas de saúde.
 
 ---
 

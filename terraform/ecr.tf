@@ -1,6 +1,7 @@
 resource "aws_ecr_repository" "api" {
   name                 = "lacrei-api-${var.environment}"
   image_tag_mutability = "MUTABLE"
+  force_delete         = true
 
   # Segurança: Escaneia a imagem em busca de vulnerabilidades ao fazer o push
   image_scanning_configuration {
