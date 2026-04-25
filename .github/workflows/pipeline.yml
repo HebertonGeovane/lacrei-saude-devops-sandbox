@@ -1,0 +1,101 @@
+name: CI/CD Lacrei Saúde
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+
+permissions:
+  contents: read
+
+jobs:
+  # 1. ESTÁGIO DE BUILD: Transforma código em imagem Docker
+  build:
+    name: Build Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPO_NAME: ${{ github.ref == 'refs/heads/main' && 'lacrei-api-production' || 'lacrei-api-staging' }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$REPO_NAME:$IMAGE_TAG -t $ECR_REGISTRY/$REPO_NAME:latest -f docker/Dockerfile .
+          docker push $ECR_REGISTRY/$REPO_NAME --all-tags
+
+  # 2. ESTÁGIO DE TESTE: Valida o container antes de qualquer deploy
+  test:
+    name: Unit & Container Security Test
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Run Docker Linter (Hadolint)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker/Dockerfile
+
+      - name: Test Container Health
+        run: |
+          docker build -t lacrei-api:test -f docker/Dockerfile .
+          docker run -d -p 3000:3000 --name api-test lacrei-api:test
+          sleep 5
+          curl --fail http://localhost:3000/status || (docker logs api-test && exit 1)
+          docker rm -f api-test
+
+  # 3. ESTÁGIO DE DEPLOY STAGING: Automático para a branch develop
+  deploy-staging:
+    name: Deploy Staging
+    needs: test
+    if: github.ref == 'refs/heads/develop'
+    environment: staging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update ECS Service (Staging)
+        run: |
+          aws ecs update-service \
+            --cluster lacrei-cluster-staging \
+            --service lacrei-service-staging \
+            --force-new-deployment \
+            --region us-east-1
+
+  # 4. ESTÁGIO DE DEPLOY PRODUCTION
+  deploy-production:
+    name: Deploy Production
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Update ECS Service (Production)
+        run: |
+          aws ecs update-service \
+            --cluster lacrei-cluster-production \
+            --service lacrei-service-production \
+            --force-new-deployment \
+            --region us-east-1
