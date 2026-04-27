@@ -160,6 +160,53 @@ Durante o desenvolvimento deste teste técnico, enfrentei e resolvi desafios rea
 * **Solução:** Implementação de alarmes de **CloudWatch** integrados ao **Amazon SNS**. Configuração e monitoramento da métrica `UnhealthyHostCount` para garantir que o time de engenharia receba notificações imediatas via e-mail caso os containers de produção apresentem falhas de saúde.
 
 ---
+# Relatório de Melhorias e Validações Técnicas
+
+Este documento detalha as implementações realizadas para atender aos requisitos de robustez, segurança e resiliência operacional da infraestrutura.
+
+---
+
+### ✅ 1. Monitoramento e Observabilidade
+**Requisito:** Evidenciar logs, métricas e alertas.
+
+* **Logs Estruturados:** Implementação e consulta via **CloudWatch Log Insights** para monitorar o bootstrap da aplicação e metadados críticos.
+* **Telemetria de Recursos:** Ativação do **Container Insights** para monitoramento granular de consumo de CPU e Memória, permitindo análises de performance e *right-sizing*.
+* **Resposta Proativa:** Configuração do ciclo completo de alerta:
+    * **Métrica:** `UnhealthyHostCount` (via CloudWatch Alarm).
+    * **Notificação:** Integração com **Amazon SNS**.
+    * **Evidência Real:** Demonstração do e-mail de alerta disparado em tempo real ao detectar falha de saúde nos containers.
+
+---
+
+### ✅ 2. Fluxo de Rollback Operacional
+**Requisito:** Detalhar ou demonstrar o fluxo de reversão de forma operacional.
+
+* **Estratégia Git Revert:** Demonstração técnica da reversão via terminal. Diferente de um reset, o `git revert` gera um novo commit de "cura", mantendo o histórico auditável e seguro.
+* **Automação via CI/CD:** O fluxo foi integrado ao pipeline, garantindo que o rollback seja processado automaticamente pelo GitHub Actions, realizando o redeploy da versão estável sem necessidade de intervenção manual no console da AWS.
+* **Agilidade:** Redução drástica do **MTTR** (Tempo Médio de Reparo) através de comandos rápidos e deploys automatizados.
+
+---
+
+### ✅ 3. Aspectos de Segurança
+**Requisito:** Gestão de secrets, permissões e políticas de acesso.
+
+* **Secrets Management:** Uso do **GitHub Actions Secrets** para criptografia de chaves sensíveis (`ASAAS_API_KEY`, `AWS_CREDENTIALS`, `ACM_CERTIFICATE_ARN`), garantindo que nenhum dado sensível esteja no código-fonte.
+* **IAM & Least Privilege:** Implementação de Roles distintas para o ECS:
+    * **Execution Role:** Permissões para infraestrutura (ECR/Logs).
+    * **Task Role:** Permissões específicas para o código da aplicação (ex: SNS).
+* **Segurança de Rede:** Isolamento de containers em **Subnets Privadas** e proteção de tráfego via **HTTPS** utilizando certificados gerenciados pelo **AWS ACM**.
+
+---
+
+### ✅ 4. Validações Adicionais no Pipeline
+**Requisito:** Testes automatizados e verificações pré-deploy.
+
+* **Quality Gate (Portão de Qualidade):** Implementação de **Health Check local** com o comando `curl --fail` durante o estágio de teste no GitHub Actions.
+* **Linting de Infraestrutura:** Uso do **Hadolint** para garantir que o Dockerfile siga as melhores práticas de segurança e otimização.
+* **Cenário de Falha (Shift-Left):** Demonstração real do pipeline interrompendo um deploy após uma falha simulada (Status 500), impedindo que códigos instáveis cheguem ao ambiente de produção.
+
+---
+
 
 # 👨‍💻 Autor
 
