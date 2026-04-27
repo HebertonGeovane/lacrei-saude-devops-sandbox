@@ -206,7 +206,9 @@ Este documento detalha as implementações realizadas para atender aos requisito
 * **Cenário de Falha (Shift-Left):** Demonstração real do pipeline interrompendo um deploy após uma falha simulada (Status 500), impedindo que códigos instáveis cheguem ao ambiente de produção.
 
 ---
-
+> **Caso Real de Sucesso:** Durante a atualização final desta documentação, o pipeline de CI/CD barrou automaticamente o deploy devido a um erro de compatibilidade (`ERR_REQUIRE_ESM`) entre o Node.js v18 e as novas dependências do AWS SDK v3. 
+> 
+> **Ação Tomada:** Graças ao Health Check preventivo (Ponto 4), o erro foi isolado no estágio de build. Realizamos o upgrade do runtime para **Node.js v20-slim**, garantindo a compatibilidade e a segurança das bibliotecas de telemetria sem afetar o ambiente produtivo.
 
 # 👨‍💻 Autor
 

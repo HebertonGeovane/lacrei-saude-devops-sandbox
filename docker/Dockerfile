@@ -5,7 +5,7 @@ COPY app/package*.json ./
 RUN npm install --only=production
 
 # Estágio 2: Runtime (Imagem final leve e segura)
-FROM node:18-slim
+FROM node:20-slim
 WORKDIR /app
 
 # Copia apenas o necessário do estágio anterior
