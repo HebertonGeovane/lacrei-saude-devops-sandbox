@@ -13,11 +13,12 @@ const snsClient = new SNSClient({ region: "us-east-1" });
 // coleta métricas padrão
 client.collectDefaultMetrics();
 
-// rota status (FORÇANDO ERRO PARA TESTAR VALIDAÇÃO DO PIPELINE - PONTO 4)
+// rota status
 app.get('/status', (req, res) => {
-  res.status(500).json({
-    status: 'error',
-    message: 'Falha crítica detectada pelo Pipeline'
+  res.json({
+    status: 'ok',
+    service: 'lacrei-api',
+    timestamp: new Date()
   });
 });
 
